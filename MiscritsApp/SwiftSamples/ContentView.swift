@@ -7,106 +7,149 @@
 
 import SwiftUI
 import StoreKit
-import Observation
+import SwiftData
 
 
-// What?
-@Observable
-class StoreProducts {
-    
-    let credits = [
-        "com.roijacob.currency.gold",
-        "com.roijacob.currency.gem",
-        "com.roijacob.currency.platinum"
-    ]
-    
-    // Initialize with empty array
-    var producto: [Product] = []
-    
-    var updateListenerTask: Task<Void, Error>? = nil
-    
-    init() {
-        Task(operation: {
-            do {
-                producto = try await Product.products(for: credits)
-            } catch {
-                print("Error loading products: \(error)")
-                producto = []
-            }
-            
-            updateListenerTask = listenForTransactions()
-        })
-    }
-    
-    public enum StoreError: Error {
-        case failedVerification
-    }
-    
-    func purchase(_ product: Product) async throws -> StoreKit.Transaction? {
-        let result = try await product.purchase()
-        
-        switch result {
-        case .success(let verification):
-            switch verification {
-            case .verified(let transaction):
-                print("Success - Transaction: \(transaction)")
-                print("Success - Verification Result: \(verification)")
-                
-                await transaction.finish()
-                return transaction
-            case .unverified:
-                throw StoreError.failedVerification
-            }
-        case .userCancelled, .pending:
-            return nil
-        default:
-            return nil
-        }
-    }
-    
-    func listenForTransactions() -> Task<Void, Error> {
-        return Task.detached {
-            // Iterate through any transactions that don't come from a direct call to `purchase()`.
-            for await result in Transaction.updates {
-                do {
-                    let transaction = try {
-                        switch result {
-                        case .verified(let transaction): return transaction
-                        case .unverified: throw StoreError.failedVerification
-                        }
-                    }()
+let credits = [
+    "com.roijacob.currency.gold",
+    "com.roijacob.currency.gem",
+    "com.roijacob.currency.platinum"
+]
 
-                    // Deliver products to the user.
-                    
-                    // Always finish a transaction.
-                    await transaction.finish()
-                } catch {
-                    // StoreKit has a transaction that fails verification. Don't deliver content to the user.
-                    print("Transaction failed verification.")
-                }
-            }
-        }
+
+@Model
+class GameMoney {
+    var gold: Int
+    var gem: Int
+    var platinum: Int
+    
+    init(gold: Int = 0, gem: Int = 0, platinum: Int = 0) {
+        self.gold = gold
+        self.gem = gem
+        self.platinum = platinum
     }
 }
 
+
 struct ContentView: View {
-    @State private var store = StoreProducts()
+    // MARK: - Properties
+    @Query private var gameMoney: [GameMoney]
+    @Environment(\.modelContext) private var modelContext
     
+    @State private var products: [Product] = []
+    @Environment(\.purchase) private var purchase
+    
+    var currentMoney: GameMoney {
+        if gameMoney.isEmpty {
+            let newMoney = GameMoney()
+            modelContext.insert(newMoney)
+            try? modelContext.save()
+            return newMoney
+        }
+        return gameMoney[0]
+    }
+    
+    // MARK: - Views
     var body: some View {
         VStack(content: {
-            ForEach(store.producto) { product in
+            HStack {
+                Text("Gold: \(currentMoney.gold)")
+                Spacer()
+                Text("Gem: \(currentMoney.gem)")
+                Spacer()
+                Text("Platinum: \(currentMoney.platinum)")
+            }
+            .padding()
+            
+            Spacer()
+            
+            ForEach(products) { product in
                 Button(action: {
-                    Task {
-                        try? await store.purchase(product)
-                    }
+                    Task(operation: {
+                        print("Hello World")
+                        let purchaseResult = try await purchase(product)
+                        handlePurchaseResult(purchaseResult)
+                    })
                 }, label: {
                     Text(product.displayName)
                 })
             }
+            
+            Spacer()
+            
+            Button("Reset Currency") {
+                resetCurrency()
+            }
         })
+        .task {
+            // Load products when view appears
+            do {
+                products = try await Product.products(for: credits)
+            } catch {
+                print("Failed to load products: \(error)")
+            }
+            
+            _ = listenForTransactions()
+        }
     }
-}
-
-#Preview {
-    ContentView()
+    
+    
+    private func handlePurchaseResult(_ purchaseResult: Product.PurchaseResult) {
+        switch purchaseResult {
+        case .success(let verificationResult):
+            handleVerification(verificationResult)
+        case .userCancelled:
+            print("huh? bat ayaw mo pre?")
+        case .pending:
+            print("taena ayos naman pre o")
+        @unknown default:
+            break
+        }
+    }
+    
+    // MARK: - Verification Handler
+    private func handleVerification(_ verificationResult: VerificationResult<StoreKit.Transaction>) {
+        switch verificationResult {
+        
+        case .verified(let transaction):
+            
+        // Put here the paid logic
+        updateCurrency(for: transaction.productID)
+            
+        print("liz git it!!: \(transaction)")
+        
+        case .unverified:
+            print("hell nah bruh")
+        }
+    }
+    
+    // MARK: - Helper Functions
+    private func updateCurrency(for productId: String) {
+        switch productId {
+        case "com.roijacob.currency.gold":
+            currentMoney.gold += 1
+        case "com.roijacob.currency.gem":
+            currentMoney.gem += 1
+        case "com.roijacob.currency.platinum":
+            currentMoney.platinum += 1
+        default:
+            break
+        }
+    }
+    
+    private func listenForTransactions() -> Task<Void, Error> {
+        Task.detached {
+            for await result in Transaction.updates {
+                if let transaction = try? result.payloadValue {
+                    await transaction.finish()
+                }
+            }
+        }
+    }
+    
+    private func resetCurrency() {
+        currentMoney.gold = 0
+        currentMoney.gem = 0
+        currentMoney.platinum = 0
+    }
 }
