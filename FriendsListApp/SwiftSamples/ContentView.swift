@@ -19,26 +19,64 @@ class Friends {
 }
 
 
+//struct ContentView: View {
+//    @Query(sort: \Friends.name) var allFriends: [Friends]
+//    @State private var selectedFriend: Friends?
+//    
+//    var body: some View {
+//        NavigationStack(root: {
+//            
+//            // (root:) is the view to show when the (path:) is empty or not defined
+//            List(allFriends, rowContent: { friend in
+//                Button(action: {
+//                    selectedFriend = friend
+//                }, label: {
+//                    Text(friend.name)
+//                })
+//            })
+//            .navigationTitle("My Friends")
+//            
+//            // Tracks if the variable becomes non-nil
+//            .sheet(item: $selectedFriend, content: SheetView.init)
+//        })
+//    }
+//}
+
+//struct ContentView: View {
+//    @Query(sort: \Friends.name) var allFriends: [Friends]
+//    @State private var selectedFriend: Friends?
+//    
+//    var body: some View {
+//        NavigationStack(root: {
+//            List(allFriends, rowContent: { friend in
+//                Button(action: {
+//                    selectedFriend = friend
+//                }, label: {
+//                    Text(friend.name)
+//                })
+//            })
+//            .navigationTitle("My Friends")
+//            .sheet(item: $selectedFriend) { friend in
+//                SheetView(selectedFriend: friend)
+//                    .presentationDetents([.medium, .large])
+//            }
+//        })
+//    }
+//}
+
+
+
 struct ContentView: View {
-    @Query(sort: \Friends.name) var allFriends: [Friends]
-    @State private var selectedFriend: Friends?
-    
     var body: some View {
-        NavigationStack(root: {
-            
-            // (root:) is the view to show when the (path:) is empty or not defined
-            List(allFriends, rowContent: { friend in
-                Button(action: {
-                    selectedFriend = friend
-                }, label: {
-                    Text(friend.name)
-                })
-            })
-            .navigationTitle("My Friends")
-            
-            // Tracks if the variable becomes non-nil
-            .sheet(item: $selectedFriend, content: SheetView.init)
-        })
+        Text("Hello, World!")
+            .font(.title)
+            .foregroundColor(.black)
+            .padding()
+            .background(.blue)
+            .cornerRadius(10)
+            .shadow(radius: 5)
+            .frame(width: 200, height: 100)
+            .border(.black)
     }
 }
 

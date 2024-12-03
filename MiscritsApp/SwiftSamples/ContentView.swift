@@ -5,6 +5,11 @@
 //  Created by Roi Jacob on 11/26/24.
 //
 
+// kelangan finifinish mo yung transaction kahit hindi sya magsuccess
+// para lumabas yung dialog every time
+
+
+
 import SwiftUI
 import StoreKit
 import SwiftData
@@ -116,8 +121,13 @@ struct ContentView: View {
         // Put here the paid logic
         updateCurrency(for: transaction.productID)
             
-        print("liz git it!!: \(transaction)")
+        Task {
+            await transaction.finish()
+        }
+ 
+        // print("liz git it!!: \(transaction)")
         
+                    
         case .unverified:
             print("hell nah bruh")
         }
@@ -140,9 +150,22 @@ struct ContentView: View {
     private func listenForTransactions() -> Task<Void, Error> {
         Task.detached {
             for await result in Transaction.updates {
-                if let transaction = try? result.payloadValue {
-                    await transaction.finish()
-                }
+                
+//                do {
+//                    await handleVerification(result)
+//                    await transaction.finish()
+//                } catch {
+//                    // StoreKit has a transaction that fails verification. Don't deliver content to the user.
+//                    print("Transaction failed verification.")
+//                }
+                
+                
+                
+                
+                // print("the newest update: \(result)")
+//                if let transaction = try? result.payloadValue {
+//                    await transaction.finish()
+//                }
             }
         }
     }
