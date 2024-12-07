@@ -16,3 +16,6 @@ MiscritsApp - StoreKit
 
 
 try on this [one](MiscritsApp/SwiftSamples/ContentView.swift#L18)
+
+
+![StoreKit Logo](https://developer.apple.com/news/images/og/storekit-og.jpg)
